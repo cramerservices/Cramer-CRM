@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cramer Services – Mini CRM</title>
+<meta name="description" content="Lightweight CRM for leads, contacts, and jobs. Stores data in your browser.">
+<style>
+  :root{
+    --bg:#f7f9fc;
+    --card:#ffffff;
+    --ink:#1b1f24;
+    --muted:#657289;
+    --accent:#0d6efd;   /* Cramer blue */
+    --accent-2:#ffb703; /* accent yellow (unused but available) */
+    --green:#16a34a;
+    --red:#dc2626;
+    --ring:0 0 0 3px rgba(13,110,253,.25);
+    --chip:#eef4ff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  header{
+    position:sticky;top:0;z-index:10;
+    background:var(--card);
+    box-shadow:0 1px 0 rgba(0,0,0,.06);
+  }
+  .wrap{max-width:1200px;margin:0 auto;padding:16px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand .logo{
+    width:36px;height:36px;border-radius:50%;
+    background: radial-gradient(ellipse at 30% 30%, #1da1ff, #1170ee);
+    display:grid;place-items:center;color:white;font-weight:700
+  }
+  .tabs{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .tab{padding:8px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  main{padding:20px 0}
+  .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+  .card{
+    background:var(--card);border-radius:16px;padding:16px;
+    box-shadow:0 1px 2px rgba(0,0,0,.05)
+  }
+  .card h3{margin:0 0 12px}
+  label{display:block;font-size:.9rem;color:var(--muted);margin:10px 0 6px}
+  input,select,textarea{
+    width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;outline:none
+  }
+  input:focus,select:focus,textarea:focus{box-shadow:var(--ring);border-color:var(--accent)}
+  textarea{min-height:84px;resize:vertical}
+  .row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.ghost{background:#fff;border:1px solid #e5e7eb}
+  .btn.danger{background:var(--red);color:#fff}
+  .btn-group{display:flex;gap:8px;flex-wrap:wrap}
+  .stack{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .chip{padding:6px 10px;border-radius:999px;background:var(--chip);border:1px solid #dbe7ff;color:#2753b3;font-weight:600;cursor:pointer}
+  .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{padding:10px;border-bottom:1px solid #eef2f6;vertical-align:top}
+  th{color:var(--muted);font-weight:600;text-align:left;font-size:.9rem}
+  .row-actions{display:flex;gap:8px}
+  .stage{padding:6px 10px;border-radius:999px;font-weight:700;font-size:.78rem;display:inline-block}
+  .s-Lead{background:#eef4ff;color:#244baf}
+  .s-Quoted{background:#fff7ed;color:#c2410c}
+  .s-Scheduled{background:#ecfeff;color:#075985}
+  .s-In\ Progress{background:#f5f3ff;color:#5b21b6}
+  .s-Completed{background:#ecfdf5;color:#065f46}
+  .s-Won{background:#dcfce7;color:#166534}
+  .s-Lost{background:#fee2e2;color:#991b1b}
+  .overdue{color:#991b1b;font-weight:700}
+  .footer-note{color:var(--muted);font-size:.85rem;margin-top:8px}
+  .hint{color:var(--muted);font-size:.85rem}
+  .hidden{display:none}
+  @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo">CS</div>
+      <div>
+        <div style="font-weight:800">Cramer Services • Mini CRM</div>
+        <div class="hint">Track leads, quotes, jobs & follow-ups. Data saves in your browser.</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="deals">Deals/Jobs</button>
+      <button class="tab" data-tab="contacts">Contacts</button>
+      <button class="tab" data-tab="exports">Export / Import</button>
+      <button class="tab" data-tab="help">Quick Help</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- Deals/Jobs -->
+  <section id="deals" class="tab-pane">
+    <div class="grid">
+      <!-- Add deal -->
+      <div class="card">
+        <h3>Add Deal / Job</h3>
+        <div class="row">
+          <div>
+            <label>Title (e.g., “AC Tune-Up – Smith”)</label>
+            <input id="deal-title" placeholder="Job title">
+          </div>
+          <div>
+            <label>Stage</label>
+            <select id="deal-stage">
+              <option>Lead</option>
+              <option>Quoted</option>
+              <option>Scheduled</option>
+              <option>In Progress</option>
+              <option>Completed</option>
+              <option>Won</option>
+              <option>Lost</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Contact</label>
+            <select id="deal-contact"></select>
+          </div>
+          <div>
+            <label>Service Type</label>
+            <input id="deal-service" placeholder="HVAC, Roofing, Handyman…">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Amount ($)</label>
+            <input id="deal-amount" type="number" placeholder="0.00" step="0.01" min="0">
+          </div>
+          <div>
+            <label>Next Follow-Up</label>
+            <input id="deal-next" type="date">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Phone (for new contact)</label>
+            <input id="deal-phone" placeholder="314-xxx-xxxx">
+          </div>
+          <div>
+            <label>Email (for new contact)</label>
+            <input id="deal-email" placeholder="name@email.com">
+          </div>
+        </div>
+        <label>Notes</label>
+        <textarea id="deal-notes" placeholder="Details, quote, address…"></textarea>
+        <div class="btn-group" style="margin-top:10px">
+          <button class="btn primary" id="add-deal-btn">Add Deal</button>
+          <button class="btn ghost" id="clear-form-btn" type="button">Clear</button>
+        </div>
+        <div class="footer-note">Tip: Select an existing contact or choose “➕ New contact…” and fill phone/email.</div>
+      </div>
+
+      <!-- Filters -->
+      <div class="card">
+        <h3>Search & Filter</h3>
+        <label>Search</label>
+        <input id="search" placeholder="Name, phone, address, service, notes…">
+        <label style="margin-top:12px">Stage</label>
+        <div class="stack" id="stage-chips"></div>
+        <label style="margin-top:12px">Sort</label>
+        <select id="sort">
+          <option value="updated_desc">Recently updated</option>
+          <option value="amount_desc">Amount (high → low)</option>
+          <option value="amount_asc">Amount (low → high)</option>
+          <option value="next_asc">Follow-up (soonest)</option>
+          <option value="title_asc">Title A→Z</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="stack" style="justify-content:space-between">
+        <h3 style="margin:0">Deals/Jobs</h3>
+        <div class="hint" id="deal-count"></div>
+      </div>
+      <table id="deal-table">
+        <thead>
+          <tr>
+            <th>Title</th><th>Contact</th><th>Service</th><th>Amount</th><th>Stage</th><th>Next</th><th>Notes</th><th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Contacts -->
+  <section id="contacts" class="tab-pane hidden">
+    <div class="grid">
+      <div class="card">
+        <h3>Add Contact</h3>
+        <div class="row">
+          <div>
+            <label>Name</label>
+            <input id="c-name" placeholder="Full name">
+          </div>
+          <div>
+            <label>Phone</label>
+            <input id="c-phone" placeholder="314-xxx-xxxx">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Email</label>
+            <input id="c-email" placeholder="name@email.com">
+          </div>
+          <div>
+            <label>Address</label>
+            <input id="c-address" placeholder="Street, City, ZIP">
+          </div>
+        </div>
+        <label>Lead Source</label>
+        <input id="c-source" placeholder="Nextdoor, Referral, Website…">
+        <div class="btn-group" style="margin-top:10px">
+          <button class="btn primary" id="add-contact-btn">Add Contact</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Find Contact</h3>
+        <input id="c-search" placeholder="Search contacts…">
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="stack" style="justify-content:space-between">
+        <h3 style="margin:0">Contacts</h3>
+        <div class="hint" id="contact-count"></div>
+      </div>
+      <table id="contact-table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Phone</th><th>Email</th><th>Address</th><th>Source</th><th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Export / Import -->
+  <section id="exports" class="tab-pane hidden">
+    <div class="card">
+      <h3>Backup & Move Your Data</h3>
+      <div class="btn-group">
+        <button class="btn primary" id="export-json">Export JSON</button>
+        <button class="btn ghost" id="export-csv">Export Deals CSV</button>
+        <label class="btn ghost" for="import-json" style="cursor:pointer">Import JSON</label>
+        <input type="file" id="import-json" accept="application/json" class="hidden">
+      </div>
+      <div class="footer-note">All data is saved in your browser (localStorage). Export regularly if you’ll switch devices.</div>
+    </div>
+  </section>
+
+  <!-- Help -->
+  <section id="help" class="tab-pane hidden">
+    <div class="card">
+      <h3>Quick Help</h3>
+      <ul>
+        <li><b>Add a deal</b> from the Deals tab. Choose an existing contact or pick “➕ New contact…” to create one on the fly.</li>
+        <li>Use the <b>stage chips</b> to filter your pipeline (Lead, Quoted, Scheduled, etc.).</li>
+        <li><b>Next Follow-Up</b> shows in red when overdue.</li>
+        <li>Go to <b>Export/Import</b> to back up your data.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const key = 'cramer_crm_v1';
+const stages = ['Lead','Quoted','Scheduled','In Progress','Completed','Won','Lost'];
+
+let state = load() || { contacts: [], deals: [], lastId: 1 };
+
+function uid(){ return state.lastId++; }
+function save(){ localStorage.setItem(key, JSON.stringify(state)); }
+function load(){ try{ return JSON.parse(localStorage.getItem(key)); }catch{ return null; } }
+
+// Tabs
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const id = btn.dataset.tab;
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+  });
+});
+
+// Stage chips
+const chipsWrap = document.getElementById('stage-chips');
+let stageFilter = 'All';
+function renderChips(){
+  chipsWrap.innerHTML = '';
+  const all = document.createElement('button');
+  all.className = 'chip' + (stageFilter==='All'?' active':'');
+  all.textContent = 'All';
+  all.onclick=()=>{ stageFilter='All'; renderDeals(); renderChips(); };
+  chipsWrap.appendChild(all);
+  stages.forEach(s=>{
+    const b=document.createElement('button');
+    b.className='chip'+(stageFilter===s?' active':'');
+    b.textContent = s;
+    b.onclick=()=>{ stageFilter=s; renderDeals(); renderChips(); };
+    chipsWrap.appendChild(b);
+  });
+}
+renderChips();
+
+// Contacts select
+const contactSelect = document.getElementById('deal-contact');
+function refreshContactSelect(){
+  contactSelect.innerHTML='';
+  const optNew = document.createElement('option');
+  optNew.value = '__new__';
+  optNew.textContent = '➕ New contact…';
+  contactSelect.appendChild(optNew);
+  state.contacts
+    .slice().sort((a,b)=>a.name.localeCompare(b.name))
+    .forEach(c=>{
+      const o=document.createElement('option');
+      o.value=c.id;o.textContent=c.name + (c.phone?` (${c.phone})`:'');
+      contactSelect.appendChild(o);
+    });
+}
+refreshContactSelect();
+
+// Add Contact
+document.getElementById('add-contact-btn').addEventListener('click',()=>{
+  const name = document.getElementById('c-name').value.trim();
+  if(!name){ alert('Name required'); return; }
+  const c = {
+    id: uid(),
+    name,
+    phone: document.getElementById('c-phone').value.trim(),
+    email: document.getElementById('c-email').value.trim(),
+    address: document.getElementById('c-address').value.trim(),
+    source: document.getElementById('c-source').value.trim(),
+    createdAt: Date.now(), updatedAt: Date.now()
+  };
+  state.contacts.push(c); save();
+  document.getElementById('c-name').value='';
+  document.getElementById('c-phone').value='';
+  document.getElementById('c-email').value='';
+  document.getElementById('c-address').value='';
+  document.getElementById('c-source').value='';
+  refreshContactSelect(); renderContacts();
+});
+
+// Add Deal
+document.getElementById('add-deal-btn').addEventListener('click',()=>{
+  const title = document.getElementById('deal-title').value.trim();
+  if(!title){ alert('Title required'); return; }
+  const stage = document.getElementById('deal-stage').value;
+  const amount = parseFloat(document.getElementById('deal-amount').value) || 0;
+  const next = document.getElementById('deal-next').value || '';
+  const service = document.getElementById('deal-service').value.trim();
+  const notes = document.getElementById('deal-notes').value.trim();
+  const contactVal = contactSelect.value;
+  let contactId = null;
+
+  if(contactVal === '__new__'){
+    const name = prompt('New contact name?') || '';
+    if(!name){ alert('Contact name required'); return; }
+    const newC = {
+      id: uid(),
+      name,
+      phone: document.getElementById('deal-phone').value.trim(),
+      email: document.getElementById('deal-email').value.trim(),
+      address: '',
+      source: 'CRM',
+      createdAt: Date.now(), updatedAt: Date.now()
+    };
+    state.contacts.push(newC);
+    contactId = newC.id;
+    refreshContactSelect();
+  } else {
+    contactId = Number(contactVal);
+  }
+
+  const d = {
+    id: uid(),
+    title, stage, amount, next, service, notes,
+    contactId,
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+  state.deals.push(d); save();
+  clearDealForm(); renderDeals();
+});
+
+document.getElementById('clear-form-btn').addEventListener('click', clearDealForm);
+function clearDealForm(){
+  ['deal-title','deal-amount','deal-next','deal-service','deal-notes','deal-phone','deal-email'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  document.getElementById('deal-stage').value='Lead';
+  contactSelect.value='__new__';
+}
+
+// Render Deals
+function renderDeals(){
+  const q = (document.getElementById('search').value||'').toLowerCase();
+  const sort = document.getElementById('sort').value;
+  let rows = state.deals.map(d=>({d, c: state.contacts.find(x=>x.id===d.contactId)}));
+  if(stageFilter!=='All'){ rows = rows.filter(x=>x.d.stage===stageFilter); }
+  if(q){
+    rows = rows.filter(({d,c})=>{
+      return (d.title+d.service+d.notes+(d.amount||'')).toLowerCase().includes(q)
+        || (c? (c.name+(c.phone||'')+(c.email||'')+(c.address||'')).toLowerCase().includes(q) : false);
+    });
+  }
+  rows.sort((a,b)=>{
+    if(sort==='updated_desc') return b.d.updatedAt - a.d.updatedAt;
+    if(sort==='amount_desc') return (b.d.amount||0)-(a.d.amount||0);
+    if(sort==='amount_asc') return (a.d.amount||0)-(b.d.amount||0);
+    if(sort==='next_asc') return (a.d.next||'9999').localeCompare(b.d.next||'9999');
+    if(sort==='title_asc') return a.d.title.localeCompare(b.d.title);
+    return 0;
+  });
+  document.getElementById('deal-count').textContent = rows.length + ' shown';
+  const tb = document.querySelector('#deal-table tbody');
+  tb.innerHTML='';
+  const today = new Date().toISOString().slice(0,10);
+  rows.forEach(({d,c})=>{
+    const tr=document.createElement('tr');
+    const tdTitle = `<div style="font-weight:700">${escapeHtml(d.title)}</div>
+    <div class="hint">Updated ${new Date(d.updatedAt).toLocaleString()}</div>`;
+    const tdContact = c ? `<div style="font-weight:600">${escapeHtml(c.name)}</div>
+      <div class="hint">${escapeHtml(c.phone||'')}${c.email?' • '+escapeHtml(c.email):''}</div>` : '<i class="hint">No contact</i>';
+    const tdStage = `<span class="stage s-${d.stage.replace(' ','\\ ')}">${d.stage}</span>`;
+    const nextClass = (d.next && d.next < today) ? 'overdue' : 'hint';
+    const tdNext = d.next ? `<span class="${nextClass}">${d.next}</span>` : '<span class="hint">—</span>';
+    tr.innerHTML = `
+      <td>${tdTitle}</td>
+      <td>${tdContact}</td>
+      <td>${escapeHtml(d.service||'')}</td>
+      <td>$${(d.amount||0).toFixed(2)}</td>
+      <td>${tdStage}</td>
+      <td>${tdNext}</td>
+      <td style="max-width:280px">${escapeHtml(d.notes||'')}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn ghost" data-edit="${d.id}">Edit</button>
+          <button class="btn danger" data-del="${d.id}">Delete</button>
+        </div>
+      </td>`;
+    tb.appendChild(tr);
+  });
+
+  // wire actions
+  tb.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    const id = Number(b.getAttribute('data-del'));
+    if(confirm('Delete this deal?')){
+      state.deals = state.deals.filter(x=>x.id!==id);
+      save(); renderDeals();
+    }
+  });
+  tb.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{
+    const id = Number(b.getAttribute('data-edit'));
+    const d = state.deals.find(x=>x.id===id);
+    const newStage = prompt('Stage (Lead, Quoted, Scheduled, In Progress, Completed, Won, Lost):', d.stage) || d.stage;
+    if(!stages.includes(newStage)){ alert('Invalid stage.'); return; }
+    const newAmount = prompt('Amount ($):', d.amount) || d.amount;
+    const newNext = prompt('Next follow-up (YYYY-MM-DD):', d.next) || d.next;
+    d.stage=newStage; d.amount=parseFloat(newAmount)||0; d.next=newNext; d.updatedAt=Date.now();
+    save(); renderDeals();
+  });
+}
+document.getElementById('search').addEventListener('input',renderDeals);
+document.getElementById('sort').addEventListener('change',renderDeals);
+
+// Render Contacts
+function renderContacts(){
+  const q = (document.getElementById('c-search').value||'').toLowerCase();
+  let rows = state.contacts.slice();
+  if(q){
+    rows = rows.filter(c=>(c.name+c.phone+c.email+c.address+(c.source||'')).toLowerCase().includes(q));
+  }
+  document.getElementById('contact-count').textContent = rows.length + ' shown';
+  const tb = document.querySelector('#contact-table tbody');
+  tb.innerHTML='';
+  rows.sort((a,b)=>a.name.localeCompare(b.name)).forEach(c=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="font-weight:600">${escapeHtml(c.name)}</td>
+      <td>${escapeHtml(c.phone||'')}</td>
+      <td>${escapeHtml(c.email||'')}</td>
+      <td>${escapeHtml(c.address||'')}</td>
+      <td class="hint">${escapeHtml(c.source||'')}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn ghost" data-edit="${c.id}">Edit</button>
+          <button class="btn danger" data-del="${c.id}">Delete</button>
+        </div>
+      </td>`;
+    tb.appendChild(tr);
+  });
+  // actions
+  tb.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    const id = Number(b.getAttribute('data-del'));
+    if(confirm('Delete this contact (keeps deals but unlinks contact)?')){
+      state.contacts = state.contacts.filter(x=>x.id!==id);
+      state.deals.forEach(d=>{ if(d.contactId===id) d.contactId = null; });
+      save(); refreshContactSelect(); renderContacts(); renderDeals();
+    }
+  });
+  tb.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{
+    const id = Number(b.getAttribute('data-edit'));
+    const c = state.contacts.find(x=>x.id===id);
+    const name = prompt('Name:', c.name) || c.name;
+    const phone = prompt('Phone:', c.phone||'') || c.phone;
+    const email = prompt('Email:', c.email||'') || c.email;
+    const address = prompt('Address:', c.address||'') || c.address;
+    const source = prompt('Lead source:', c.source||'') || c.source;
+    Object.assign(c,{name,phone,email,address,source,updatedAt:Date.now()});
+    save(); refreshContactSelect(); renderContacts(); renderDeals();
+  });
+}
+document.getElementById('c-search').addEventListener('input',renderContacts);
+
+// Export / Import
+document.getElementById('export-json').addEventListener('click',()=>{
+  const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cramer_crm_backup.json';
+  a.click();
+});
+
+document.getElementById('export-csv').addEventListener('click',()=>{
+  const header = ['id','title','stage','amount','next','service','notes','contact_name','phone','email','address','createdAt','updatedAt'];
+  const lines = [header.join(',')];
+  state.deals.forEach(d=>{
+    const c = state.contacts.find(x=>x.id===d.contactId)||{};
+    const row = [
+      d.id, csv(d.title), d.stage, d.amount, d.next, csv(d.service), csv(d.notes),
+      csv(c.name||''), csv(c.phone||''), csv(c.email||''), csv(c.address||''),
+      new Date(d.createdAt).toISOString(), new Date(d.updatedAt).toISOString()
+    ];
+    lines.push(row.join(','));
+  });
+  const blob = new Blob([lines.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='cramer_deals.csv'; a.click();
+});
+
+document.getElementById('import-json').addEventListener('change', (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const incoming = JSON.parse(reader.result);
+      if(!incoming.contacts || !incoming.deals) throw new Error('Invalid file');
+      if(!incoming.lastId) incoming.lastId = Math.max(
+        1,
+        ...incoming.contacts.map(c=>c.id||1),
+        ...incoming.deals.map(d=>d.id||1)
+      ) + 1;
+      state = incoming; save();
+      refreshContactSelect(); renderContacts(); renderDeals();
+      alert('Import complete.');
+    }catch(err){
+      alert('Import failed: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+});
+
+// Utilities
+function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m])); }
+function csv(s){ s = (s||'').toString().replace(/"/g,'""'); return `"${s}"`; }
+
+// Seed a sample on first load
+if(!state.contacts.length && !state.deals.length){
+  const c1 = {id:uid(),name:'Netta Ball',phone:'',email:'',address:'Dutchtown, St. Louis',source:'Nextdoor',createdAt:Date.now(),updatedAt:Date.now()};
+  const c2 = {id:uid(),name:'Tom H.',phone:'',email:'',address:'',source:'Referral',createdAt:Date.now(),updatedAt:Date.now()};
+  state.contacts.push(c1,c2);
+  state.deals.push({
+    id:uid(),
+    title:'Replace 9 blinds',
+    stage:'Quoted',
+    amount:250,
+    next:new Date(Date.now()+86400000).toISOString().slice(0,10),
+    service:'Handyman',
+    notes:'Tomorrow morning availability',
+    contactId:c1.id,
+    createdAt:Date.now(),
+    updatedAt:Date.now()
+  });
+  save();
+}
+
+renderContacts();
+renderDeals();
+refreshContactSelect();
+</script>
+</body>
+</html>
