@@ -191,7 +191,7 @@
       <table id="deal-table">
         <thead>
           <tr>
-            <th>Title</th><th>Contact</th><th>Service</th><th>Amount</th><th>Stage</th><th>Next</th><th>Notes</th><th></th>
+            <th>Title</th><th>Job ID</th><th>Contact</th><th>Service</th><th>Amount</th><th>Stage</th><th>Next</th><th>Notes</th><th></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -286,11 +286,51 @@
 const key = 'cramer_crm_v1';
 const stages = ['Lead','Quoted','Scheduled','In Progress','Completed','Won','Lost'];
 
-let state = load() || { contacts: [], deals: [], lastId: 1 };
+let state = load() || { contacts: [], deals: [], lastId: 1, jobCounter: 0 };
 
-function uid(){ return state.lastId++; }
-function save(){ localStorage.setItem(key, JSON.stringify(state)); }
-function load(){ try{ return JSON.parse(localStorage.getItem(key)); }catch{ return null; } }
+function save() {
+  localStorage.setItem('crm', JSON.stringify(state));
+}
+
+function load() {
+  return JSON.parse(localStorage.getItem('crm'));
+}
+
+function uid() {
+  return state.lastId++;
+}
+let state = load() || { contacts: [], deals: [], lastId: 1, jobCounter: 0 };
+
+function save() {
+  localStorage.setItem('crm', JSON.stringify(state));
+}
+
+function load() {
+  return JSON.parse(localStorage.getItem('crm'));
+}
+
+function uid() {
+  return state.lastId++;
+}
+function newJobId(){
+  const ymd = new Date().toISOString().slice(0,10).replace(/-/g,''); // YYYYMMDD
+  state.jobCounter = (state.jobCounter || 0) + 1;
+  save(); // persist the increment
+  return `CS-${ymd}-${String(state.jobCounter).padStart(4,'0')}`;
+}
+
+// Backfill old deals with Job IDs if missing
+(function backfillJobIds(){
+  let changed = false;
+  state.deals.forEach(d=>{
+    if(!d.jobId){
+      d.jobId = newJobId();
+      changed = true;
+    }
+  });
+  if(changed) save();
+})();
+
 
 // Tabs
 document.querySelectorAll('.tab').forEach(btn=>{
@@ -400,6 +440,8 @@ document.getElementById('add-deal-btn').addEventListener('click',()=>{
     contactId,
     createdAt: Date.now(),
     updatedAt: Date.now()
+    jobId: newJobId(),
+
   };
   state.deals.push(d); save();
   clearDealForm(); renderDeals();
@@ -449,6 +491,7 @@ function renderDeals(){
     const tdNext = d.next ? `<span class="${nextClass}">${d.next}</span>` : '<span class="hint">—</span>';
     tr.innerHTML = `
       <td>${tdTitle}</td>
+      <td><code>${escapeHtml(d.jobId || '')}</code></td>
       <td>${tdContact}</td>
       <td>${escapeHtml(d.service||'')}</td>
       <td>$${(d.amount||0).toFixed(2)}</td>
@@ -545,15 +588,16 @@ document.getElementById('export-json').addEventListener('click',()=>{
 });
 
 document.getElementById('export-csv').addEventListener('click',()=>{
-  const header = ['id','title','stage','amount','next','service','notes','contact_name','phone','email','address','createdAt','updatedAt'];
+const header = ['id','jobId','title','stage','amount','next','service','notes','contact_name','phone','email','address','createdAt','updatedAt'];
   const lines = [header.join(',')];
   state.deals.forEach(d=>{
     const c = state.contacts.find(x=>x.id===d.contactId)||{};
-    const row = [
-      d.id, csv(d.title), d.stage, d.amount, d.next, csv(d.service), csv(d.notes),
-      csv(c.name||''), csv(c.phone||''), csv(c.email||''), csv(c.address||''),
-      new Date(d.createdAt).toISOString(), new Date(d.updatedAt).toISOString()
-    ];
+const row = [
+  d.id, csv(d.jobId || ''), csv(d.title), d.stage, d.amount, d.next, csv(d.service), csv(d.notes),
+  csv(c.name||''), csv(c.phone||''), csv(c.email||''), csv(c.address||''),
+  new Date(d.createdAt).toISOString(), new Date(d.updatedAt).toISOString()
+];
+
     lines.push(row.join(','));
   });
   const blob = new Blob([lines.join('\n')],{type:'text/csv'});
